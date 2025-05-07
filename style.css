@@ -1,0 +1,46 @@
+body {
+    margin: 0;
+    overflow: hidden; /* Prevent scrollbars */
+    background-color: black;
+    display: flex;
+    flex-direction: column; /* Stack instructions on top of container */
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: 'Arial', sans-serif; /* A common, clean font */
+    color: #E0E0E0; /* Light grey for text */
+    -webkit-user-select: none; /* Disable text selection on iOS */
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent; /* Disable tap highlight on iOS */
+}
+
+#instructions {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.05); /* Subtle background for instructions */
+}
+
+#instructions p {
+    margin: 5px 0;
+    font-size: 0.9em;
+}
+
+#simulation-container {
+    width: 90vw; /* Responsive width */
+    max-width: 800px; /* Max width for larger screens */
+    height: 70vh; /* Responsive height */
+    max-height: 600px; /* Max height */
+    position: relative; /* Important for canvas positioning if needed */
+    border: 1px solid #333; /* Subtle border for the simulation area */
+    box-shadow: 0 0 15px rgba(128, 128, 255, 0.3); /* Soft glow */
+}
+
+/* Style for the canvas that Matter.js creates */
+canvas {
+    display: block; /* Removes any extra space below the canvas */
+    background-color: black; /* Ensured by renderer options too */
+}

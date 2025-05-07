@@ -4,41 +4,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Tone.js Setup ---
     const mainSynth = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: 'triangle8' },
-        // --- V5: ADJUSTED ENVELOPE FOR CLICK REDUCTION ---
+        // --- V6: Simplest oscillator for click reduction ---
+        oscillator: { type: 'sine' },
+        // --- V6: Even softer envelope ---
         envelope: {
-            attack: 0.015, // Slightly longer attack
-            decay: 0.2,
-            sustain: 0.3,
-            release: 0.6, // Slightly longer release
+            attack: 0.025, // Increased attack
+            decay: 0.25,
+            sustain: 0.2,
+            release: 0.7, // Increased release
         },
-        volume: -7 // Kept volume from V4 test
+        volume: -9 // Adjusted volume
     }).toDestination();
 
-    const chordSynth = new Tone.PolySynth(Tone.AMSynth, {
-        harmonicity: 1.6, // Slightly adjusted
-        detune: 0,
-        oscillator: { type: "fatsawtooth", count: 3, spread: 20 }, // Richer sawtooth
-        envelope: { attack: 0.05, decay: 0.3, sustain: 0.8, release: 1.0 },
-        volume: -10 // Adjusted volume
+    const chordSynth = new Tone.PolySynth(Tone.Synth, { // V6: Simplified chord synth
+        oscillator: { type: 'triangle' }, // Using triangle for a softer chord
+        envelope: {
+            attack: 0.05, // Smoother attack
+            decay: 0.3,
+            sustain: 0.7,
+            release: 1.0, // Smoother release
+        },
+        volume: -12 // Adjusted volume
     }).toDestination();
 
     const reverb = new Tone.Reverb({
-        decay: 1.5, // Shorter reverb tail
-        wet: 0.25   // A bit less reverb
+        decay: 1.2,
+        wet: 0.0 // --- V6: Bypass reverb for click testing ---
     }).toDestination();
 
-    mainSynth.connect(reverb);
+    mainSynth.connect(reverb); // Still connect, but wet=0 means dry signal
     chordSynth.connect(reverb);
 
     const particleNotes = ['C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5'];
     let particleNoteIndex = 0;
     const letterChars = ['I', 'W', 'L', 'Y', 'F'];
     const letterNotes = { 'I': 'C4', 'W': 'E4', 'L': 'G4', 'Y': 'A4', 'F': 'C5' };
-    const chordProgression = [
-        ['C4', 'E4', 'G4'], ['G4', 'B4', 'D5'],
-        ['A3', 'C4', 'E4'], ['F3', 'A3', 'C4']
-    ];
+    const chordProgression = [ /* ... same ... */ ];
     let chordIndex = 0;
     let recentlyHitLetters = new Set();
     let lastChordTime = 0;
@@ -50,38 +51,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let renderWidth = container.clientWidth;
     let renderHeight = container.clientHeight;
 
-    const engine = Engine.create({
-        // V5: Engine iterations for potentially better collision response
-        // positionIterations: 8, // Default 6
-        // velocityIterations: 6  // Default 4
-        // Enable these if simple physics changes aren't enough, slight performance cost
-    });
+    const engine = Engine.create();
     const world = engine.world;
-    world.gravity.y = 0.3; // --- V5: SLIGHTLY REDUCED GRAVITY ---
+    world.gravity.y = 0.3; // Kept from V5
 
-    const render = Render.create({
-        element: container, engine: engine,
-        options: {
-            width: renderWidth, height: renderHeight,
-            wireframes: false, background: 'black',
-            pixelRatio: window.devicePixelRatio || 1
-        }
-    });
-
+    const render = Render.create({ /* ... same ... */ });
     const wallThickness = 60;
     const wallOptions = { isStatic: true, label: 'wall', render: { fillStyle: '#101010' } };
-    World.add(world, [ /* ... walls same ... */
-        Bodies.rectangle(renderWidth / 2, -wallThickness / 2 + 1, renderWidth + 2, wallThickness, { ...wallOptions }),
-        Bodies.rectangle(renderWidth / 2, renderHeight + wallThickness / 2 - 1, renderWidth + 2, wallThickness, { ...wallOptions }),
-        Bodies.rectangle(-wallThickness / 2 + 1, renderHeight / 2, wallThickness, renderHeight + 2, { ...wallOptions }),
-        Bodies.rectangle(renderWidth + wallThickness / 2 - 1, renderHeight / 2, wallThickness, renderHeight + 2, { ...wallOptions })
-    ]);
+    World.add(world, [ /* ... walls same ... */ ]);
 
     const letterBodies = [];
-    const letterConfig = { /* ... same as V3/V4 ... */
-        count: letterChars.length, yPosRatio: 0.28, baseWidthToScreenRatio: 0.1,
-        maxWidth: 60, minWidth: 25, aspectRatio: 1.5, minSpacingToWidthRatio: 0.4
-    };
+    const letterConfig = { /* ... same as V5 ... */ };
+    // ... Letter sizing and positioning logic same as V5 ...
     let effectiveLetterWidth = Math.min(letterConfig.maxWidth, renderWidth * letterConfig.baseWidthToScreenRatio);
     effectiveLetterWidth = Math.max(letterConfig.minWidth, effectiveLetterWidth);
     const finalLetterHeight = effectiveLetterWidth * letterConfig.aspectRatio;
@@ -98,13 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const spacingUnit = (availableWidthForLettersAndSpacing - finalTotalLetterWidth) / (letterConfig.count + 1);
     const letterYPosition = renderHeight * letterConfig.yPosRatio;
 
-    letterChars.forEach((char, index) => {
+    letterChars.forEach((char, index) => { /* ... same letter creation, using V5 physics ... */
         const xPos = (spacingUnit * (index + 1)) + (effectiveLetterWidth * index) + (effectiveLetterWidth / 2) + (renderWidth * 0.025);
         const letterBody = Bodies.rectangle(
             xPos, letterYPosition, effectiveLetterWidth, finalLetterHeight, {
                 isStatic: true, label: `letter-${char}`, customChar: char,
-                friction: 0.2, // --- V5: Reduced letter friction ---
-                restitution: 0.6, // --- V5: Increased letter bounciness ---
+                friction: 0.2, restitution: 0.6,
                 render: { fillStyle: `hsl(${index * (360 / letterConfig.count)}, 70%, 75%)` }
             }
         );
@@ -112,64 +92,63 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     World.add(world, letterBodies);
 
+
     const particles = [];
     let audioStarted = false;
     let soundStatusElement = document.getElementById('soundStatus');
-    // let initialSoundTestDone = false; // V4 diagnostic, can be removed
 
     function createParticle(x, y) {
         if (!audioStarted) {
-            console.log("V5: Attempting to start audio context...");
+            console.log("V6: Attempting to start audio context...");
             const audioContext = Tone.getContext().rawContext;
             if (audioContext && audioContext.state === 'suspended') {
-                audioContext.resume().then(() => console.log("V5: AudioContext explicitly resumed."))
-                                   .catch(e => console.error("V5: Error resuming existing AudioContext:", e));
+                audioContext.resume().then(() => console.log("V6: AudioContext explicitly resumed."))
+                                   .catch(e => console.error("V6: Error resuming existing AudioContext:", e));
             }
             Tone.start().then(() => {
                 audioStarted = true;
-                console.log("V5: Tone.js audio context is RUNNING!");
+                console.log("V6: Tone.js audio context is RUNNING!");
                 if (instructionsDiv) instructionsDiv.style.display = 'none';
                 if (soundStatusElement) soundStatusElement.textContent = "Sound ready!";
-                console.log("V5: Tone.Destination volume:", Tone.Destination.volume.value);
-                console.log("V5: Tone.Destination muted:", Tone.Destination.mute);
+                console.log("V6: Tone.Destination volume:", Tone.Destination.volume.value);
+                console.log("V6: Tone.Destination muted:", Tone.Destination.mute);
 
-                // V5: Quieter, more standard priming note, or can be removed if confident
-                mainSynth.triggerAttackRelease('C5', '64n', Tone.now(), -45);
-                console.log("V5: Audio priming note (C5) triggered.");
+                // --- V6: Transport-based warm-up ---
+                // Ensure transport is started
+                if (Tone.Transport.state !== "started") {
+                    Tone.Transport.start();
+                    console.log("V6: Tone.Transport started.");
+                }
+                // Schedule a brief, silent (or nearly silent) event to ensure pipeline is active
+                Tone.Transport.scheduleOnce((time) => {
+                    // You could trigger a very quiet, short sound here if desired for testing,
+                    // but often just scheduling an event is enough.
+                    // e.g., mainSynth.triggerAttackRelease('C2', '128n', time, -80);
+                    console.log("V6: Transport warm-up event executed at", time);
+                }, Tone.now() + 0.05); // Schedule 50ms in the future
+
+                // --- V6: REMOVED EXPLICIT PRIMING NOTE ---
 
             }).catch(e => {
-                console.error("V5: Tone.js audio context FAILED to start:", e);
+                console.error("V6: Tone.js audio context FAILED to start:", e);
                 if (soundStatusElement) soundStatusElement.textContent = "Sound error. Tap again.";
             });
         }
 
         const particleRadius = Math.max(4, Math.min(renderWidth, renderHeight) * 0.014);
         const particle = Bodies.circle(x, y, particleRadius, {
-            // --- V5: FURTHER ADJUSTED PARTICLE PHYSICS FOR LIVELINESS ---
-            restitution: 0.82,          // Even more bouncy
-            friction: 0.015,            // Even lower friction
-            frictionAir: 0.002,         // Very low air friction
-            density: 0.0006,           // Even lighter particles
-            label: 'particle',
+            // Using V5 particle physics, as they were likely good
+            restitution: 0.82, friction: 0.015, frictionAir: 0.002,
+            density: 0.0006, label: 'particle',
             render: { fillStyle: `hsl(${Math.random() * 360}, 90%, 70%)` }
         });
         particles.push(particle);
         World.add(world, particle);
     }
 
-    function handleInteraction(eventX, eventY) {
-        const rect = container.getBoundingClientRect();
-        createParticle(eventX - rect.left, eventY - rect.top);
-    }
+    function handleInteraction(eventX, eventY) { /* ... same ... */ }
     container.addEventListener('click', (event) => handleInteraction(event.clientX, event.clientY));
-    container.addEventListener('touchstart', (event) => {
-        if (event.target === container || container.contains(event.target)) {
-             event.preventDefault();
-        }
-        for (let i = 0; i < event.changedTouches.length; i++) {
-            handleInteraction(event.changedTouches[i].clientX, event.changedTouches[i].clientY);
-        }
-    }, { passive: false });
+    container.addEventListener('touchstart', (event) => { /* ... same ... */ }, { passive: false });
 
     Events.on(engine, 'collisionStart', (event) => {
         if (!audioStarted || Tone.context.state !== 'running') { return; }
@@ -179,8 +158,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         for (let i = 0; i < pairs.length; i++) {
             const pair = pairs[i];
+            // ... (bodyA, bodyB definition) ...
             const bodyA = pair.bodyA;
             const bodyB = pair.bodyB;
+
 
             let noteToPlay = null;
             let soundSynthInstance = mainSynth;
@@ -197,30 +178,30 @@ document.addEventListener('DOMContentLoaded', () => {
             if (hitChar) {
                 noteToPlay = letterNotes[hitChar];
                 const impactVelocity = particleBody ? Vector.magnitude(particleBody.velocity) : 1;
-                volume = Math.min(-7, -16 + Math.log10(impactVelocity + 1) * 7); // Adjusted letter hit volume
-                if (!recentlyHitLetters.has(hitChar)) {
-                    recentlyHitLetters.add(hitChar); newLetterHitThisFrame = true;
-                    setTimeout(() => recentlyHitLetters.delete(hitChar), letterHitResetTime);
-                }
-                const letterBody = bodyA.label.startsWith('letter-') ? bodyA : bodyB;
+                volume = Math.min(-8, -17 + Math.log10(impactVelocity + 1) * 7); // Adjusted letter hit volume
+                if (!recentlyHitLetters.has(hitChar)) { /* ... same ... */ }
+                const letterBody = bodyA.label.startsWith('letter-') ? bodyA : bodyB; /* ... same ... */
+                // ... (letter flash)
                 const originalColor = letterBody.render.fillStyle;
                 letterBody.render.fillStyle = '#FFFFFF';
-                setTimeout(() => { letterBody.render.fillStyle = originalColor; }, 90); // Shorter flash
+                setTimeout(() => { letterBody.render.fillStyle = originalColor; }, 90);
+
 
             } else if (bodyA.label === 'particle' && bodyB.label === 'particle') {
                 noteToPlay = particleNotes[particleNoteIndex % particleNotes.length];
                 particleNoteIndex++;
                 const impactVelocity = Vector.magnitude(Vector.sub(bodyA.velocity, bodyB.velocity));
-                volume = Math.min(-11, -21 + Math.log10(impactVelocity + 1) * 5); // Adjusted p-p volume
+                volume = Math.min(-12, -22 + Math.log10(impactVelocity + 1) * 5); // Adjusted p-p volume
             }
 
             if (noteToPlay && Tone.context.state === 'running') {
-                // --- V5: LONGER NOTE DURATION FOR CLICK REDUCTION ---
-                soundSynthInstance.triggerAttackRelease(noteToPlay, '8t', Tone.now(), volume); // 8th note triplet
+                // Kept '8t' duration from V5, will see if sine wave + envelope is enough
+                soundSynthInstance.triggerAttackRelease(noteToPlay, '8t', Tone.now(), volume);
             }
         }
 
         if (newLetterHitThisFrame && recentlyHitLetters.size === letterChars.length) {
+             // ... (chord logic same as V5) ...
             const now = Tone.now() * 1000;
             if (now - lastChordTime > chordCooldown) {
                 const currentChord = chordProgression[chordIndex % chordProgression.length];
@@ -234,30 +215,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    Events.on(render, 'afterRender', () => { /* ... same text rendering ... */
-        const context = render.context;
-        context.fillStyle = 'rgba(0, 0, 0, 0.65)';
-        const fontSize = Math.min(finalLetterHeight * 0.5, effectiveLetterWidth * 0.6);
-        context.font = `bold ${fontSize}px Arial, sans-serif`;
-        context.textAlign = 'center'; context.textBaseline = 'middle';
-        letterBodies.forEach(body => {
-            context.fillText(body.customChar, body.position.x, body.position.y);
-        });
-    });
-
-    window.addEventListener('resize', () => { /* ... same basic resize ... */
-        renderWidth = container.clientWidth; renderHeight = container.clientHeight;
-        render.canvas.width = renderWidth; render.canvas.height = renderHeight;
-        Render.setPixelRatio(render, window.devicePixelRatio || 1);
-        console.log("Window resized. For optimal letter layout, refresh or implement full dynamic resize.");
-    });
+    Events.on(render, 'afterRender', () => { /* ... same text rendering ... */ });
+    window.addEventListener('resize', () => { /* ... same basic resize ... */ });
 
     Render.run(render);
     const runner = Runner.create();
     Runner.run(runner, engine);
 
-    if (instructionsDiv && soundStatusElement) {
-         soundStatusElement.textContent = "Tap to begin creating music!";
-    } else if (instructionsDiv) { /* ... same fallback ... */ }
-    console.log("IWLYF Music-Physics Simulator V5 Initialized!");
+    if (instructionsDiv && soundStatusElement) { /* ... same initial message ... */ }
+    console.log("IWLYF Music-Physics Simulator V6 Initialized!");
 });

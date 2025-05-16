@@ -100,8 +100,26 @@ document.addEventListener('DOMContentLoaded', () => {
     World.add(world, letterBodies);
 
     const particles = [];
+    const clearButton = document.getElementById('clearButton');
+    const muteButton = document.getElementById('muteButton');
+    let isMuted = false;
     let audioStarted = false;
     let soundStatusElement = document.getElementById('soundStatus');
+
+    function clearParticles() {
+        while (particles.length) {
+            const p = particles.pop();
+            World.remove(world, p);
+        }
+    }
+
+    function toggleMute() {
+        isMuted = !isMuted;
+        Tone.Destination.mute = isMuted;
+        if (muteButton) {
+            muteButton.textContent = isMuted ? 'Unmute' : 'Mute';
+        }
+    }
 
     function createParticle(x, y) {
         if (!audioStarted) {
@@ -161,6 +179,12 @@ document.addEventListener('DOMContentLoaded', () => {
             handleInteraction(event.changedTouches[i].clientX, event.changedTouches[i].clientY);
         }
     }, { passive: false });
+    if (clearButton) {
+        clearButton.addEventListener('click', clearParticles);
+    }
+    if (muteButton) {
+        muteButton.addEventListener('click', toggleMute);
+    }
 
     Events.on(engine, 'collisionStart', (event) => {
         if (!audioStarted || Tone.context.state !== 'running') { return; }
